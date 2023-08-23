@@ -10,3 +10,8 @@ conda create -n pr-vdrcd python=3.8
 ```bash
 pip install -r requirements.txt
 ```
+
+**Activate by:**
+```bash
+conda activate pr-vdrcd
+```
