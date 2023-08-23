@@ -1,4 +1,4 @@
-from envs.base_env import BaseEnv
+from .base_env import BaseEnv
 
 class DrillScrew(BaseEnv):
     def __init__(self):

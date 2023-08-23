@@ -1,5 +1,4 @@
-from envs.tidy_up_dish import TidyUpDish
-from envs.drill_screw import DrillScrew
+from envs import TidyUpDish, DrillScrew
 
 
 def main():

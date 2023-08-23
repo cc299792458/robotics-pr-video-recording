@@ -1,4 +1,4 @@
-from envs.base_env import BaseEnv
+from .base_env import BaseEnv
 
 class TidyUpDish(BaseEnv):
     def __init__(self):
