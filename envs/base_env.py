@@ -21,7 +21,7 @@ class BaseEnv():
         self._scene = self._engine.create_scene()
         self._scene.set_timestep(1 / self._simulation_frequency)  # Simulate in 500Hz
         self._add_background()
-        self._add_table()
+        self._add_work_place()
         self._add_agent()
         self._add_actor()
         
@@ -30,7 +30,7 @@ class BaseEnv():
         self._scene.set_ambient_light([0.5, 0.5, 0.5])
         self._scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
 
-    def _add_table(self, pose=sapien.Pose(p=[-0.05, 0, 0.0]), length=0.4, width=1.0, height=1.0, thickness=0.1, color=(0.8, 0.6, 0.4), name='table'):
+    def _add_work_place(self, pose=sapien.Pose(p=[-0.05, 0, 0.0]), length=0.4, width=1.0, height=1.0, thickness=0.1, color=(0.8, 0.6, 0.4), name='table'):
         builder = self._scene.create_actor_builder()
         # Tabletop
         tabletop_pose = sapien.Pose([0., 0., -thickness / 2])  # Make the top surface's z equal to 0
@@ -48,7 +48,6 @@ class BaseEnv():
                 builder.add_box_visual(pose=table_leg_pose, half_size=table_leg_half_size, color=color)
         table = builder.build_static(name=name)
         table.set_pose(pose)
-
         self.table = table
 
     def _add_agent(self, fix_root_link=True, x_offset=0.05, y_offset=0.25):
