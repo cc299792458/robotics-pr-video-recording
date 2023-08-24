@@ -51,16 +51,17 @@ class BaseEnv():
 
         self.table = table
 
-    def _add_agent(self, fix_root_link=True, x_offset=0.05, y_offset=0.2):
+    def _add_agent(self, fix_root_link=True, x_offset=0.05, y_offset=0.3):
         # TODO(chichu): add agents here
         loader_robot_left = self._scene.create_urdf_loader()
         loader_robot_left.fix_root_link = fix_root_link
-        self.robot_left = loader_robot_left.load("./assets/robot/xarm6_description/xarm6_allegro_wrist_mounted_left.urdf")
+        # NOTE(chichu): left hand has the longer customized finger tip
+        self.robot_left = loader_robot_left.load("./assets/robot/xarm6_description/xarm6_allegro_long_finger_tip_left.urdf")
         self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, 0.0], [1, 0, 0, 0]))
         
         loader_robot_right = self._scene.create_urdf_loader()
         loader_robot_right.fix_root_link = fix_root_link
-        self.robot_right = loader_robot_right.load("./assets/robot/xarm6_description/xarm6_allegro_wrist_mounted_right.urdf")
+        self.robot_right = loader_robot_right.load("./assets/robot/xarm6_description/xarm6_allegro_wrist_mounted_rotate_right.urdf")
         self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, 0.0], [1, 0, 0, 0]))
         
         self.robot = [self.robot_left, self.robot_right]
@@ -108,7 +109,7 @@ class BaseEnv():
         for robot in self.robot:
             passive_qf = robot.compute_passive_force(external=False)
             robot.set_qf(passive_qf)
-            
+
     def _simulation_step(self):
         self._scene.step()
         self._scene.update_render()
