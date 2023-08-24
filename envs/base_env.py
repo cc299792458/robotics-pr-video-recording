@@ -62,6 +62,8 @@ class BaseEnv():
         loader_robot_right.fix_root_link = fix_root_link
         self.robot_right = loader_robot_right.load("./assets/robot/xarm6_description/xarm6_allegro_wrist_mounted_right.urdf")
         self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, 0.0], [1, 0, 0, 0]))
+        
+        self.robot = [self.robot_left, self.robot_right]
 
     def _add_actor(self):
         """ Add actors
@@ -103,12 +105,10 @@ class BaseEnv():
         pass
 
     def _before_simulation_step(self):
-        passive_qf_left_robot = self.robot_left.compute_passive_force(external=False)
-        self.robot_left.set_qf(passive_qf_left_robot)
-
-        passive_qf_right_robot = self.robot_right.compute_passive_force(external=False)
-        self.robot_right.set_qf(passive_qf_right_robot)
-
+        for robot in self.robot:
+            passive_qf = robot.compute_passive_force(external=False)
+            robot.set_qf(passive_qf)
+            
     def _simulation_step(self):
         self._scene.step()
         self._scene.update_render()
