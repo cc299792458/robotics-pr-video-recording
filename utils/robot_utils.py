@@ -24,6 +24,7 @@ def generate_robot_info():
     return info_dict
 
 def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) -> sapien.Articulation:
+    # TODO(chichu): update the color of fingers
     loader = scene.create_urdf_loader()
     info = generate_robot_info()[robot_name]
     filename = info.path
@@ -39,8 +40,8 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
     robot = robot_builder.build(fix_root_link=True)
     robot.set_name(robot_name)
 
-    robot_arm_control_params = np.array([200000, 40000, 500])  # This PD is far larger than real to improve stability
-    finger_control_params = np.array([200, 60, 10])
+    robot_arm_control_params = np.array([2e5, 4e4, 5e2])  # This PD is far larger than real to improve stability
+    finger_control_params = np.array([2e2, 6e1, 1e1])
     arm_joint_names = [f"joint{i}" for i in range(1, 8)]
     for joint in robot.get_active_joints():
         name = joint.get_name()
@@ -49,12 +50,12 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
         else:
             joint.set_drive_property(*(1 * finger_control_params), mode="force")
 
-    mat = scene.engine.create_physical_material(1.5, 1, 0.01)
+    mat_physi = scene.engine.create_physical_material(1.5, 1, 0.01)
     for link in robot.get_links():
         for geom in link.get_collision_shapes():
             geom.min_patch_radius = 0.02
             geom.patch_radius = 0.04
-            geom.set_physical_material(mat)
+            geom.set_physical_material(mat_physi)
 
     return robot
 

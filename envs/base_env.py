@@ -27,7 +27,7 @@ class BaseEnv():
         self._add_background()
         self._add_table()
         self._add_agent()
-        self._add_work_space()
+        self._add_workspace()
         self._add_actor()
         
     def _add_background(self):
@@ -57,6 +57,7 @@ class BaseEnv():
 
     def _add_agent(self, fix_root_link=True, x_offset=0.05, y_offset=0.4):
         # NOTE(chichu): allegro hands used here have longer customized finger tips
+        # TODO(chichu): add ability hands if needed.
         self.robot_left = load_robot(self._scene, 'robot_left')
         self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, 0.0], [1, 0, 0, 0]))
         self.robot_right = load_robot(self._scene, 'robot_right')
@@ -83,7 +84,7 @@ class BaseEnv():
         self.viewer.window.set_camera_parameters(near=0.05, far=100, fovy=1)
 
     def _init_controller(self, control_frequency=20):
-        # TODO(chichu): add controllers here
+        # TODO(chichu): add joint control, delta pose control based on the current target version
         self._control_frequency = control_frequency
         assert (self._simulation_frequency % self._control_frequency == 0)
         self._frame_skip = self._simulation_frequency // self._control_frequency
