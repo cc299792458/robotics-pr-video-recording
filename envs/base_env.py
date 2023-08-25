@@ -113,7 +113,7 @@ class BaseEnv():
     def _before_control_step(self):
         for index in range(len(self.robot)):
             self.current_qpos[index] = self.robot[index].get_qpos()
-            print(self.current_qpos[0])
+            # print(self.current_qpos[0])
             self.ee_link_last_pose[index] = (self.ee_link[index].get_pose())
 
     def _set_target(self, action):
