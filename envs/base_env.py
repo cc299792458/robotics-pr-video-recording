@@ -25,8 +25,9 @@ class BaseEnv():
         self._scene = self._engine.create_scene()
         self._scene.set_timestep(1 / self._simulation_frequency)  # Simulate in 500Hz
         self._add_background()
-        self._add_work_place()
+        self._add_table()
         self._add_agent()
+        self._add_work_space()
         self._add_actor()
         
     def _add_background(self):
@@ -34,7 +35,7 @@ class BaseEnv():
         self._scene.set_ambient_light([0.5, 0.5, 0.5])
         self._scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
 
-    def _add_work_place(self, pose=sapien.Pose(p=[-0.05, 0, 0.0]), length=0.4, width=1.0, height=1.0, thickness=0.1, color=(0.8, 0.6, 0.4), name='table'):
+    def _add_table(self, pose=sapien.Pose(p=[-0.05, 0, 0.0]), length=0.4, width=1.0, height=1.0, thickness=0.1, color=(0.8, 0.6, 0.4), name='table'):
         builder = self._scene.create_actor_builder()
         # Tabletop
         tabletop_pose = sapien.Pose([0., 0., -thickness / 2])  # Make the top surface's z equal to 0
@@ -62,7 +63,12 @@ class BaseEnv():
         self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, 0.0], [1, 0, 0, 0]))
         
         self.robot = [self.robot_left, self.robot_right]
-        self._cache_robot_info()
+        self._init_cache_robot_info()
+
+    def _add_workspace(self):
+        """ Add workspace.
+        """
+        raise NotImplementedError
 
     def _add_actor(self):
         """ Add actors
@@ -84,44 +90,53 @@ class BaseEnv():
         self._control_time_step = 1 / self._control_frequency
 
     def reset(self):
-        self._init_scene()
+        # Set robot qpos
+        for index in range(len(self.robot)):
+            qpos = np.zeros(self.robot[index].dof)
+            xarm_qpos = self.robot_info[self.robot_name[index]].arm_init_qpos
+            qpos[:self.arm_dof[index]] = xarm_qpos
+            self.robot[index].set_qpos(qpos)
+            self.robot[index].set_drive_target(qpos)
 
     def step(self, action):
         self.step_action(action)
 
     def step_action(self, action):
         self._before_control_step()
-        for index in range(len(self.robot)):
-            current_qpos = self.robot[index].get_qpos()
-            ee_link_last_pose = self.ee_link[index].get_pose()
-            action = np.clip(action, -1, 1)
-            target_root_velocity = recover_action(action[:6], self.velocity_limit[index][:6])
-            palm_jacobian = self.kinematic_model[index].compute_end_link_spatial_jacobian(current_qpos[:self.arm_dof])
-            arm_qvel = compute_inverse_kinematics(target_root_velocity, palm_jacobian)[:self.arm_dof[index]]
-            arm_qvel = np.clip(arm_qvel, -np.pi / 1, np.pi / 1)
-            arm_qpos = arm_qvel * self._control_time_step + self.robot[index].get_qpos()[:self.arm_dof[index]]
-
-            hand_qpos = recover_action(action[6:], self.robot[index].get_qlimits()[self.arm_dof[index]:])
-            target_qpos = np.concatenate([arm_qpos, hand_qpos])
-            target_qvel = np.zeros_like(target_qpos)
-            target_qvel[:self.arm_dof] = arm_qvel
-            self.robot[index].set_drive_target(target_qpos)
-            self.robot[index].set_drive_velocity_target(target_qvel)
+        self._set_target(action)
         for _ in range(self._frame_skip):
             self._before_simulation_step()
             self._simulation_step()
             self._after_simulation_step()
-        self._after_control_step()
-        for index in range(len(self.robot)):
-            ee_link_new_pose = self.ee_link[index].get_pose()
-            relative_pos = ee_link_new_pose.p - ee_link_last_pose.p
-            self.cartesian_error[index] = np.linalg.norm(relative_pos - target_root_velocity[:3] * self.control_time_step)
+        # self._after_control_step()
 
     def _before_control_step(self):
-        pass
+        for index in range(len(self.robot)):
+            self.current_qpos[index] = self.robot[index].get_qpos()
+            print(self.current_qpos[0])
+            self.ee_link_last_pose[index] = (self.ee_link[index].get_pose())
+
+    def _set_target(self, action):
+        for index in range(len(self.robot)):
+            # Use inverse kinematics to calculate target arm_qpos
+            action = np.clip(action, -1, 1)
+            self.target_root_velocity[index] = (recover_action(action[:6], self.velocity_limit[index][:6]))
+            palm_jacobian = self.kinematic_model[index].compute_end_link_spatial_jacobian(self.current_qpos[index][:self.arm_dof[index]])
+            arm_qvel = compute_inverse_kinematics(self.target_root_velocity[index], palm_jacobian)[:self.arm_dof[index]]
+            arm_qvel = np.clip(arm_qvel, -np.pi / 1, np.pi / 1)
+            arm_qpos = arm_qvel * self._control_time_step + self.robot[index].get_qpos()[:self.arm_dof[index]]
+            hand_qpos = recover_action(action[6:], self.robot[index].get_qlimits()[self.arm_dof[index]:])
+            target_qpos = np.concatenate([arm_qpos, hand_qpos])
+            target_qvel = np.zeros_like(target_qpos)
+            target_qvel[:self.arm_dof[index]] = arm_qvel
+            self.robot[index].set_drive_target(target_qpos)
+            self.robot[index].set_drive_velocity_target(target_qvel)
 
     def _after_control_step(self):
-        pass
+        for index in range(len(self.robot)):
+            ee_link_new_pose = self.ee_link[index].get_pose()
+            relative_pos = ee_link_new_pose.p - self.ee_link_last_pose[index].p
+            self.cartesian_error[index] = np.linalg.norm(relative_pos - self.target_root_velocity[index][:3] * self._control_time_step)
 
     def _before_simulation_step(self):
         for robot in self.robot:
@@ -136,20 +151,21 @@ class BaseEnv():
     def _after_simulation_step(self):
         pass
 
-    def _cache_robot_info(self, root_frame='robot'):
+    def _init_cache_robot_info(self, root_frame='robot'):
         self.robot_name = ['robot_left', 'robot_right']
         self.robot_info = generate_robot_info()
         self.arm_dof, self.hand_dof = [], []
         self.velocity_limit, self.kinematic_model, self.robot_collision_links = [], [], []
         self.root_frame, self.base_frame_pos = [], []
         self.ee_link_name, self.ee_link = [], []
-        self.palm_link_name, self.palm_link = [], []
         self.finger_tip_links, self.finger_contact_links = [], []
         self.finger_contact_ids, self.finger_tip_pos = [], []
-        self.palm_pose, self.palm_pos_in_base = [], []
         self.object_in_tip, self.target_in_object, self.target_in_object_angle = [], [], []
         self.object_lift = []
         self.robot_object_contact = []
+        self.ee_link_last_pose, self.ee_link_new_pose = [], []
+        self.current_qpos = []
+        self.target_root_velocity = []
         self.cartesian_error = []
         for i, name in enumerate(self.robot_name):
             self.arm_dof.append(self.robot_info[name].arm_dof)
@@ -168,10 +184,10 @@ class BaseEnv():
             self.base_frame_pos.append(np.zeros(3))
 
             self.ee_link_name.append(self.kinematic_model[i].end_link_name)
-            self.ee_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name][0])
+            self.ee_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name[0]][0])
             
-            self.palm_link_name.append(self.robot_info[name].palm_name)
-            self.palm_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.palm_link_name][0])
+            # self.palm_link_name.append(self.robot_info[name].palm_name)
+            # self.palm_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.palm_link_name[0]][0])
 
             finger_tip_names = (["link_15.0_tip", "link_3.0_tip", "link_7.0_tip", "link_11.0_tip"])
             finger_contact_link_name = [
@@ -187,8 +203,6 @@ class BaseEnv():
             self.finger_contact_ids.append(np.array([0] * 3 + [1] * 4 + [2] * 4 + [3] * 4 + [4]))
             self.finger_tip_pos.append(np.zeros([len(finger_tip_names), 3]))
             
-            self.palm_pose.append(self.palm_link[i].get_pose())
-            self.palm_pos_in_base.append(np.zeros(3))
             self.object_in_tip.append(np.zeros([len(finger_tip_names), 3]))
             self.target_in_object.append(np.zeros([3]))
             self.target_in_object_angle.append(np.zeros([1]))
@@ -196,5 +210,8 @@ class BaseEnv():
 
             # Contact buffer
             self.robot_object_contact.append(np.zeros(len(finger_tip_names) + 1))
-
+            
+            self.ee_link_last_pose.append(0)
+            self.current_qpos.append(0)
+            self.target_root_velocity.append(0)
             self.cartesian_error.append(0)

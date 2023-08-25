@@ -15,7 +15,7 @@ class RobotInfo(NamedTuple):
 def generate_robot_info():
     xarm_path = Path("./assets/robot/xarm6_description/")
     allegro_hand_xarm6_left = RobotInfo(path=str(xarm_path / "xarm6_allegro_long_finger_tip_left.urdf"), hand_dof=16, arm_dof=6,
-                                      palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, 0])
+                                      palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, np.pi])
     allegro_hand_xarm6_right = RobotInfo(path=str(xarm_path / "xarm6_allegro_long_finger_tip_right.urdf"), hand_dof=16, arm_dof=6,
                                       palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, 0])
     
@@ -33,6 +33,7 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
             link_builder.set_collision_groups(1, 1, 17, 0)
     else:
         for link_builder in robot_builder.get_link_builders():
+            # NOTE(chichu): These links are at the junction of palm and fingers
             if link_builder.get_name() in ["link_9.0", "link_5.0", "link_1.0", "link_13.0", "base_link"]:
                 link_builder.set_collision_groups(1, 1, 17, 0)
     robot = robot_builder.build(fix_root_link=True)
