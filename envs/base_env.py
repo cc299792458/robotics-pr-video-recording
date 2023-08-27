@@ -31,7 +31,11 @@ class BaseEnv():
         self._add_actor()
         
     def _add_background(self):
-        self._scene.add_ground(altitude=-1.0)
+        physical_material = self._scene.create_physical_material(1.0, 1.0, 0.0)
+        self._scene.default_physical_material = physical_material
+        render_material = self._renderer.create_material()
+        render_material.set_base_color([0.21, 0.18, 0.14, 1.0])
+        self._scene.add_ground(altitude = -1.0, render_material = render_material, render_half_size=[8,8])
         self._scene.set_ambient_light([0.5, 0.5, 0.5])
         self._scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
 
@@ -69,7 +73,8 @@ class BaseEnv():
     def _add_workspace(self):
         """ Add workspace.
         """
-        raise NotImplementedError
+        pass
+        # raise NotImplementedError
 
     def _add_actor(self):
         """ Add actors
@@ -79,9 +84,10 @@ class BaseEnv():
     def _init_viewer(self):
         self.viewer = Viewer(self._renderer)
         self.viewer.set_scene(self._scene)
-        self.viewer.set_camera_xyz(x=-0.8, y=0, z=1.0)
-        self.viewer.set_camera_rpy(r=0, p=-np.arctan2(2, 2), y=0)
-        self.viewer.window.set_camera_parameters(near=0.05, far=100, fovy=1)
+        self.viewer.set_camera_xyz(x=2.5, y=1.0, z=1.0)
+        self.viewer.set_camera_rpy(r=0, p=-0.5, y = -3.54)
+        self.viewer.window.set_camera_parameters(near=0.05, far=100, fovy=1.2)
+
 
     def _init_controller(self, control_frequency=20):
         # TODO(chichu): add joint control, delta pose control based on the current target version
@@ -109,7 +115,7 @@ class BaseEnv():
             self._before_simulation_step()
             self._simulation_step()
             self._after_simulation_step()
-        # self._after_control_step()
+        self._after_control_step()
 
     def _before_control_step(self):
         for index in range(len(self.robot)):
