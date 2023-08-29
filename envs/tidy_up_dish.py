@@ -6,6 +6,9 @@ class TidyUpDish(BaseEnv):
     def __init__(self):
         super().__init__()
 
+    def _add_workspace(self):
+        pass
+
     def _add_actor(self):
         # TODO(haoyang): add task related actors here.
         """
