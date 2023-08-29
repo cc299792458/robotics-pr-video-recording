@@ -39,7 +39,7 @@ class BaseEnv():
         self._scene.set_ambient_light([0.5, 0.5, 0.5])
         self._scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
 
-    def _add_table(self, pose=sapien.Pose(p=[-0.05, 0, 0.0]), length=0.4, width=1.0, height=1.0, thickness=0.1, color=(0.8, 0.6, 0.4), name='table'):
+    def _add_table(self, pose=sapien.Pose(p=[-0.05, 0, -0.20]), length=0.5, width=1.83, height=0.77, thickness=0.03, color=(0.8, 0.6, 0.4), name='table'):
         builder = self._scene.create_actor_builder()
         # Tabletop
         tabletop_pose = sapien.Pose([0., 0., -thickness / 2])  # Make the top surface's z equal to 0
@@ -63,9 +63,9 @@ class BaseEnv():
         # NOTE(chichu): allegro hands used here have longer customized finger tips
         # TODO(chichu): add ability hands if needed.
         self.robot_left = load_robot(self._scene, 'robot_left')
-        self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, 0.0], [1, 0, 0, 0]))
+        self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, -0.20], [1, 0, 0, 0]))
         self.robot_right = load_robot(self._scene, 'robot_right')
-        self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, 0.0], [1, 0, 0, 0]))
+        self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, -0.20], [1, 0, 0, 0]))
         
         self.robot = [self.robot_left, self.robot_right]
         self._init_cache_robot_info()
