@@ -2,17 +2,16 @@ import numpy as np
 import sapien.core as sapien
 from sapien.utils import Viewer
 
-from utils.robot_utils import load_robot, generate_robot_info, recover_action, compute_inverse_kinematics
-from kinematics.kinematics_helper import PartialKinematicModel
+from utils.controller_utils import set_up_controller
+from utils.robot_utils import load_robot, generate_robot_info, recover_action, compute_inverse_kinematics, get_kinematic_model
+
 
 
 class BaseEnv():
     def __init__(self):
-
         self._init_engine_renderer()
         self._init_scene()
         self._init_viewer()
-        self._init_controller()
 
     def _init_engine_renderer(self):
         self._engine = sapien.Engine()
@@ -21,9 +20,9 @@ class BaseEnv():
         self._engine.set_log_level("error")
 
     def _init_scene(self):
-        self._simulation_frequency = 500
+        self._simulation_freq = 500
         self._scene = self._engine.create_scene()
-        self._scene.set_timestep(1 / self._simulation_frequency)  # Simulate in 500Hz
+        self._scene.set_timestep(1 / self._simulation_freq)  # Simulate in 500Hz
         self._add_background()
         self._add_table()
         self._add_agent()
@@ -60,21 +59,22 @@ class BaseEnv():
         self.table = table
 
     def _add_agent(self, fix_root_link=True, x_offset=0.05, y_offset=0.4):
+        self._init_control_property()   # initialize control property before adding robots.
         # NOTE(chichu): allegro hands used here have longer customized finger tips
         # TODO(chichu): add ability hands if needed.
         self.robot_left = load_robot(self._scene, 'robot_left')
-        self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, -0.20], [1, 0, 0, 0]))
+        self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, 0.0], [1, 0, 0, 0]))
         self.robot_right = load_robot(self._scene, 'robot_right')
-        self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, -0.20], [1, 0, 0, 0]))
+        self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, 0.0], [1, 0, 0, 0]))
         
         self.robot = [self.robot_left, self.robot_right]
+        self.controller = [self.controller_robot_left, self.controller_robot_right]
         self._init_cache_robot_info()
 
     def _add_workspace(self):
         """ Add workspace.
         """
-        pass
-        # raise NotImplementedError
+        raise NotImplementedError
 
     def _add_actor(self):
         """ Add actors
@@ -88,13 +88,14 @@ class BaseEnv():
         self.viewer.set_camera_rpy(r=0, p=-0.5, y = -3.54)
         self.viewer.window.set_camera_parameters(near=0.05, far=100, fovy=1.2)
 
-
-    def _init_controller(self, control_frequency=20):
+    def _init_control_property(self, control_freq=20, control_mode='pd_joint_pos'):
         # TODO(chichu): add joint control, delta pose control based on the current target version
-        self._control_frequency = control_frequency
-        assert (self._simulation_frequency % self._control_frequency == 0)
-        self._frame_skip = self._simulation_frequency // self._control_frequency
-        self._control_time_step = 1 / self._control_frequency
+        self._control_mode = control_mode
+        self._control_freq = control_freq
+        assert (self._simulation_freq % self._control_freq == 0)
+        self._frame_skip = self._simulation_freq // self._control_freq
+        self._control_time_step = 1 / self._control_freq
+        # NOTE(chichu): pid gains are set in load_robot() function.
 
     def reset(self):
         # Set robot qpos
@@ -121,25 +122,28 @@ class BaseEnv():
         for index in range(len(self.robot)):
             self.current_qpos[index] = self.robot[index].get_qpos()
             # print(self.current_qpos[0])
-            self.ee_link_last_pose[index] = (self.ee_link[index].get_pose())
+            # self.ee_link_last_pose[index] = (self.ee_link[index].get_pose())
 
     def _set_target(self, action):
         for index in range(len(self.robot)):
+            self.controller[index].set_target(action)
+        return None
             # Use inverse kinematics to calculate target arm_qpos
-            action = np.clip(action, -1, 1)
-            self.target_root_velocity[index] = (recover_action(action[:6], self.velocity_limit[index][:6]))
-            palm_jacobian = self.kinematic_model[index].compute_end_link_spatial_jacobian(self.current_qpos[index][:self.arm_dof[index]])
-            arm_qvel = compute_inverse_kinematics(self.target_root_velocity[index], palm_jacobian)[:self.arm_dof[index]]
-            arm_qvel = np.clip(arm_qvel, -np.pi / 1, np.pi / 1)
-            arm_qpos = arm_qvel * self._control_time_step + self.robot[index].get_qpos()[:self.arm_dof[index]]
-            hand_qpos = recover_action(action[6:], self.robot[index].get_qlimits()[self.arm_dof[index]:])
-            target_qpos = np.concatenate([arm_qpos, hand_qpos])
-            target_qvel = np.zeros_like(target_qpos)
-            target_qvel[:self.arm_dof[index]] = arm_qvel
-            self.robot[index].set_drive_target(target_qpos)
-            self.robot[index].set_drive_velocity_target(target_qvel)
+            # action = np.clip(action, -1, 1)
+            # self.target_root_velocity[index] = (recover_action(action[:6], self.velocity_limit[index][:6]))
+            # palm_jacobian = self.kinematic_model[index].compute_end_link_spatial_jacobian(self.current_qpos[index][:self.arm_dof[index]])
+            # arm_qvel = compute_inverse_kinematics(self.target_root_velocity[index], palm_jacobian)[:self.arm_dof[index]]
+            # arm_qvel = np.clip(arm_qvel, -np.pi / 1, np.pi / 1)
+            # arm_qpos = arm_qvel * self._control_time_step + self.robot[index].get_qpos()[:self.arm_dof[index]]
+            # hand_qpos = recover_action(action[6:], self.robot[index].get_qlimits()[self.arm_dof[index]:])
+            # target_qpos = np.concatenate([arm_qpos, hand_qpos])
+            # target_qvel = np.zeros_like(target_qpos)
+            # target_qvel[:self.arm_dof[index]] = arm_qvel
+            # self.robot[index].set_drive_target(target_qpos)
+            # self.robot[index].set_drive_velocity_target(target_qvel)
 
     def _after_control_step(self):
+        return None
         for index in range(len(self.robot)):
             ee_link_new_pose = self.ee_link[index].get_pose()
             relative_pos = ee_link_new_pose.p - self.ee_link_last_pose[index].p
@@ -181,17 +185,17 @@ class BaseEnv():
             velocity_limit = np.array([1] * self.arm_dof[i] + [np.pi] * self.hand_dof[i])
             self.velocity_limit.append(np.stack([-velocity_limit, velocity_limit], axis=1))
             
-            start_joint_name = self.robot[i].get_joints()[1].get_name()
-            end_joint_name = self.robot[i].get_active_joints()[self.arm_dof[i] - 1].get_name()
-            self.kinematic_model.append(PartialKinematicModel(self.robot[i], start_joint_name, end_joint_name))
+            # start_joint_name = self.robot[i].get_joints()[1].get_name()
+            # end_joint_name = self.robot[i].get_active_joints()[self.arm_dof[i] - 1].get_name()
+            # self.kinematic_model.append(PartialKinematicModel(self.robot[i], start_joint_name, end_joint_name))
             
             self.robot_collision_links.append([link for link in self.robot[i].get_links() if len(link.get_collision_shapes()) > 0])
             
             self.root_frame.append(root_frame)
             self.base_frame_pos.append(np.zeros(3))
 
-            self.ee_link_name.append(self.kinematic_model[i].end_link_name)
-            self.ee_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name[0]][0])
+            # self.ee_link_name.append(self.kinematic_model[i].end_link_name)
+            # self.ee_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name[0]][0])
             
             # self.palm_link_name.append(self.robot_info[name].palm_name)
             # self.palm_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.palm_link_name[0]][0])

@@ -4,6 +4,8 @@ from typing import NamedTuple, List, Dict
 import numpy as np
 import sapien.core as sapien
 
+from kinematics.kinematics_helper import PartialKinematicModel
+
 class RobotInfo(NamedTuple):
     path: str
     arm_dof: int
@@ -42,7 +44,7 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
 
     robot_arm_control_params = np.array([2e5, 4e4, 5e2])  # This PD is far larger than real to improve stability
     finger_control_params = np.array([2e2, 6e1, 1e1])
-    arm_joint_names = [f"joint{i}" for i in range(1, 8)]
+    arm_joint_names = [f"joint{i}" for i in range(1, 7)]    # Xarm6 have 6 arm joints.
     for joint in robot.get_active_joints():
         name = joint.get_name()
         if name in arm_joint_names:
@@ -70,3 +72,10 @@ def compute_inverse_kinematics(delta_pose_world, palm_jacobian, damping=0.05):
                  np.linalg.lstsq(palm_jacobian.dot(palm_jacobian.T) + lmbda, delta_pose_world, rcond=None)[0]
 
     return delta_qpos
+
+def get_kinematic_model(robot, arm='xarm6'):
+    if arm == 'xarm6':
+        arm_dof=6
+    start_joint_name = robot.get_joints()[1].get_name()
+    end_joint_name = robot.get_active_joints()[arm_dof - 1].get_name()
+    return PartialKinematicModel(robot, start_joint_name, end_joint_name)
