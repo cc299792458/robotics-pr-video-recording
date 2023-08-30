@@ -33,8 +33,8 @@ class TidyUpDish(BaseEnv):
         builder.add_multiple_collisions_from_file(filename='./assets/kitchen/sink/stainless_steel_sink.obj')
         sink = builder.build(name='sink') # can not be affected by external forces
         sink.set_pose(sapien.Pose(p=[-1.058, 0.0, -0.0096],q=[0.707, 0, 0, -0.707]))
-        pass
 
+        self._add_table(pose=sapien.Pose(p=[0.35, -2.2, -0.10],q=[0.707, 0, 0, -0.707]),length=0.6, width=1.8, height=0.87, thickness=0.03, color=(0.8, 0.6, 0.4), name='table2')
 
     def _add_actor(self):
         # TODO(haoyang): add task related actors here.
