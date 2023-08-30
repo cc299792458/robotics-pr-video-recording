@@ -72,8 +72,8 @@ class BaseController:
         pass
     
 # @dataclass
-# class ControllerConfig:
-#     controller_cls = BaseController    
+class ControllerConfig:
+    controller_cls = BaseController    
 
 class DictController:
     def __init__(self, arm_name='xarm6', hand_name='allegro', config=None, control_mode=None, robot=None, **kwargs):

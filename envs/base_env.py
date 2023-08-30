@@ -63,10 +63,14 @@ class BaseEnv():
         # NOTE(chichu): allegro hands used here have longer customized finger tips
         # TODO(chichu): add ability hands if needed.
         self.robot_left = load_robot(self._scene, 'robot_left')
-        self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, 0.0], [1, 0, 0, 0]))
+        self.robot_left.set_root_pose(sapien.Pose([x_offset, y_offset, -0.20], [1, 0, 0, 0]))
+        # self.kinematic_model_left = get_kinematic_model(self.robot_left)
+        self.controller_robot_left = set_up_controller(hand_name='allegro', control_mode=self._control_mode, 
+                                                       robot=self.robot_left)
         self.robot_right = load_robot(self._scene, 'robot_right')
-        self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, 0.0], [1, 0, 0, 0]))
-        
+        self.robot_right.set_root_pose(sapien.Pose([x_offset, -y_offset, -0.20], [1, 0, 0, 0]))
+        self.controller_robot_right = set_up_controller(hand_name='allegro', control_mode=self._control_mode,
+                                                        robot=self.robot_right)
         self.robot = [self.robot_left, self.robot_right]
         self.controller = [self.controller_robot_left, self.controller_robot_right]
         self._init_cache_robot_info()

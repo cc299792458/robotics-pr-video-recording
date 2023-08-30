@@ -1,7 +1,7 @@
 import numpy as np
 
 from typing import Union, Sequence
-from .base_controller import BaseController, ControllerConfig
+from agents.controllers.base_controller import BaseController, ControllerConfig
 
 class PDJointPosController(BaseController):
     def __init__(self, **kwargs):
