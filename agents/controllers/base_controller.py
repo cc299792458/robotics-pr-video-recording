@@ -9,7 +9,12 @@ class BaseController:
         self.end_index = end_index
         
     def set_target(self, action):
-        raise NotImplementedError        
+        raise NotImplementedError
+
+    def _clip_action(self, action, low, high):
+        """Clip action to [low, high]."""
+        action = np.clip(action, low, high)
+        return action
 
     def _clip_and_scale_action(self, action, low, high):
         """Clip action to [-1, 1] and scale according to a range [low, high]."""

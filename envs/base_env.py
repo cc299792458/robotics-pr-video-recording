@@ -130,7 +130,7 @@ class BaseEnv():
 
     def _set_target(self, action):
         for index in range(len(self.robot)):
-            self.controller[index].set_target(action)
+            self.controller[index].set_target(action[index])
         return None
             # Use inverse kinematics to calculate target arm_qpos
             # action = np.clip(action, -1, 1)
