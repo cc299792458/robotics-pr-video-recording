@@ -21,7 +21,7 @@ class DrillScrew(BaseEnv):
         builder.add_visual_from_file(filename='./assets/Kitchen/kitchen1/Kitchen_tietu.dae')
         builder.add_nonconvex_collision_from_file(filename='./prep/CoACD/outputs/Kitchen1.obj')
         kitchen_env = builder.build_kinematic(name='kitchen_env') # can not be affected by external forces
-        kitchen_env.set_pose(sapien.Pose(p=[-6.7, -3.0, -1.0+0.23],q=[0.707, 0, 0, -0.707]))
+        kitchen_env.set_pose(sapien.Pose(p=[-6.7, -3.4, -1.0+0.23],q=[0.707, 0, 0, -0.707]))
 
         # add the kitchen_table
         builder = self._scene.create_actor_builder()
