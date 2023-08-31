@@ -12,16 +12,7 @@ class PDJointPosController(BaseController):
         action = action[self.start_index:self.end_index]
         qlimits = self.qlimits
         lower, upper = self.config['lower'], self.config['upper']
-        if self.config['use_qlimits']:  # This means the action space is equal to the work space.
-            if self.config['use_delta']:
-                delta_qpos = self._clip_action(action, lower, upper)
-                if self.config['use_target'] and self.target_qpos != None:
-                    target_qpos = self.target_qpos + delta_qpos
-                else:
-                    target_qpos = self.qpos + delta_qpos
-            else:
-                target_qpos = self._clip_action(action, qlimits[:, 0], qlimits[:, 1])
-        else:   # This means the action space is [-1, 1]
+        if self.config['normalize_action']:
             if self.config['use_delta']:
                 delta_qpos = self._clip_and_scale_action(action, lower, upper)
                 if self.config['use_target'] and self.target_qpos != None:
@@ -30,6 +21,15 @@ class PDJointPosController(BaseController):
                     target_qpos = self.qpos + delta_qpos
             else:
                 target_qpos = self._clip_and_scale_action(action, qlimits[:, 0], qlimits[:, 1])
+        else:
+            if self.config['use_delta']:
+                delta_qpos = self._clip_action(action, lower, upper)
+                if self.config['use_target'] and self.target_qpos != None:
+                    target_qpos = self.target_qpos + delta_qpos
+                else:
+                    target_qpos = self.qpos + delta_qpos
+            else:
+                target_qpos = self._clip_action(action, qlimits[:, 0], qlimits[:, 1])
         
         self.target_qpos = target_qpos
         return target_qpos

@@ -4,23 +4,23 @@ def XArmAllegroDefaultConfig():
         use_target = True
         # Arm
         arm_pd_joint_pos = dict(lower=None, upper=None, 
-                                use_qlimits=True, 
+                                normalize_action=False, 
                                 use_delta=False,
                                 use_target=use_target, 
                                 controller_cls=PDJointPosController)
         arm_pd_joint_vel = dict(lower=-1, upper=1, 
-                                use_qlimits=False,
+                                normalize_action=False,
                                 use_delta=False, 
                                 use_target=use_target, 
                                 controller_cls=PDJointVelController)
         arm_pd_ee_delta_pose = dict(lower=-0.1, upper=0.1, 
-                                    use_qlimits=False,
+                                    normalize_action=True,
                                     use_delta=True,
                                     use_target=use_target, 
                                     controller_cls=PDEEPoseController)
         # Hand
         hand_pd_joint_pos = dict(lower=None, upper=None, 
-                                use_qlimits=False, 
+                                normalize_action=True, 
                                 use_delta=False,
                                 use_target=use_target, 
                                 controller_cls=PDJointPosController)
