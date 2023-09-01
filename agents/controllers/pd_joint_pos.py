@@ -6,7 +6,9 @@ from agents.controllers.base_controller import BaseController, ControllerConfig
 class PDJointPosController(BaseController):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.target_qpos = None
+    
+    def reset(self):
+        self.target_qpos = self.qpos
 
     def set_target(self, action):
         action = action[self.start_index:self.end_index]
@@ -15,7 +17,7 @@ class PDJointPosController(BaseController):
         if self.config['normalize_action']:
             if self.config['use_delta']:
                 delta_qpos = self._clip_and_scale_action(action, lower, upper)
-                if self.config['use_target'] and self.target_qpos != None:
+                if self.config['use_target']:
                     target_qpos = self.target_qpos + delta_qpos
                 else:
                     target_qpos = self.qpos + delta_qpos

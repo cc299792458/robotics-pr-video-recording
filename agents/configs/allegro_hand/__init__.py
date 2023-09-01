@@ -1,1 +1,1 @@
-from .defaults import XArmAllegroDefaultConfig
+from .defaults import XArm6AllegroDefaultConfig

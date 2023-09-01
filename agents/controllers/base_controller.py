@@ -2,11 +2,11 @@ import numpy as np
 from dataclasses import dataclass
 
 class BaseController:
-    def __init__(self, config, robot, start_index=None, end_index=None, **kwargs):
+    def __init__(self, config, robot, **kwargs):
         self.config = config
         self.robot = robot
-        self.start_index = start_index
-        self.end_index = end_index
+        self.start_index = config['start']
+        self.end_index = config['end']
         
     def set_target(self, action):
         raise NotImplementedError
@@ -47,6 +47,11 @@ class BaseController:
         if self._normalize_action:
             action = self._clip_and_scale_action(action)
         return action
+    
+    def reset(self):
+        """Reset the controller.
+        """
+        raise NotImplementedError
 
     def set_target(self, action: np.ndarray):
         """Set the action to execute.
@@ -81,24 +86,14 @@ class ControllerConfig:
     controller_cls = BaseController    
 
 class DictController:
-    def __init__(self, arm_name='xarm6', hand_name='allegro', config=None, control_mode=None, robot=None, **kwargs):
+    def __init__(self, config=None, control_mode=None, robot=None, **kwargs):
         config = config[control_mode]
         self.robot = robot
-        if arm_name == 'xarm6':
-            arm_dof = 6
-        else:
-            raise NotImplementedError
+
         arm_controller_cls = config['arm']['controller_cls']
-        arm_controller = arm_controller_cls(config=config['arm'], robot=robot, start_index=0, end_index=arm_dof, **kwargs)
-        
-        if hand_name == 'allegro':
-            hand_dof = 16
-        elif hand_name == 'ability':
-            hand_dof = 10
-        else:
-            raise NotImplementedError
+        arm_controller = arm_controller_cls(config=config['arm'], robot=robot, **kwargs)
         hand_controller_cls = config['hand']['controller_cls']
-        hand_controller = hand_controller_cls(config=config['hand'], robot=robot, start_index=arm_dof, end_index=arm_dof+hand_dof, **kwargs)
+        hand_controller = hand_controller_cls(config=config['hand'], robot=robot, **kwargs)
 
         self.dict_controller = dict(arm=arm_controller, hand=hand_controller)
     
@@ -109,3 +104,7 @@ class DictController:
         action = np.concatenate([arm_action, hand_action])
         self.robot.set_drive_target(action)
         self.robot.set_drive_velocity_target(np.zeros_like(action))
+
+    def reset(self):
+        self.dict_controller['arm'].reset()
+        self.dict_controller['hand'].reset()

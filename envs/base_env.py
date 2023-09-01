@@ -61,15 +61,15 @@ class BaseEnv():
     def _add_agent(self, fix_root_link=True, x_offset=-0.15, y_offset=0.4):
         self._init_control_property()   # initialize control property before adding robots.
         # NOTE(chichu): allegro hands used here have longer customized finger tips
-        # TODO(chichu): add ability hands if needed.
+        # TODO(chichu): add xarm7 and ability hand.
         self.robot_left = load_robot(self._scene, 'robot_left')
         self.robot_left.set_root_pose(sapien.Pose([x_offset, -y_offset, -0.20], [0, 0, 0, 1]))
         # self.kinematic_model_left = get_kinematic_model(self.robot_left)
-        self.controller_robot_left = set_up_controller(hand_name='allegro', control_mode=self._control_mode, 
-                                                       robot=self.robot_left)
+        self.controller_robot_left = set_up_controller(arm_name='xarm6', hand_name='allegro', 
+                                                       control_mode=self._control_mode, robot=self.robot_left)
         self.robot_right = load_robot(self._scene, 'robot_right')
         self.robot_right.set_root_pose(sapien.Pose([x_offset, y_offset, -0.20], [0, 0, 0, 1]))
-        self.controller_robot_right = set_up_controller(hand_name='allegro', control_mode=self._control_mode,
+        self.controller_robot_right = set_up_controller(arm_name='xarm6', hand_name='allegro', control_mode=self._control_mode,
                                                         robot=self.robot_right)
         self.robot = [self.robot_left, self.robot_right]
         self.controller = [self.controller_robot_left, self.controller_robot_right]
@@ -102,13 +102,16 @@ class BaseEnv():
         # NOTE(chichu): pid gains are set in load_robot() function.
 
     def reset(self):
-        # Set robot qpos
+        # Set robot initial qpos
         for index in range(len(self.robot)):
             qpos = np.zeros(self.robot[index].dof)
             xarm_qpos = self.robot_info[self.robot_name[index]].arm_init_qpos
             qpos[:self.arm_dof[index]] = xarm_qpos
             self.robot[index].set_qpos(qpos)
             self.robot[index].set_drive_target(qpos)
+        # Reset controller
+        for index in range(len(self.controller)):
+            self.controller[index].reset()
 
     def step(self, action):
         self.step_action(action)
@@ -123,6 +126,7 @@ class BaseEnv():
         self._after_control_step()
 
     def _before_control_step(self):
+        return
         for index in range(len(self.robot)):
             self.current_qpos[index] = self.robot[index].get_qpos()
             # print(self.current_qpos[0])
