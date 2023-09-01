@@ -8,7 +8,7 @@ class PDJointPosController(BaseController):
         super().__init__(**kwargs)
     
     def reset(self):
-        self.target_qpos = self.qpos
+        self._target_qpos = self.qpos
 
     def set_target(self, action):
         """
@@ -25,7 +25,7 @@ class PDJointPosController(BaseController):
             if self.config['use_delta']:
                 delta_qpos = self._clip_and_scale_action(action, lower, upper)
                 if self.config['use_target']:
-                    target_qpos = self.target_qpos + delta_qpos
+                    target_qpos = self._target_qpos + delta_qpos
                 else:
                     target_qpos = self.qpos + delta_qpos
             else:
@@ -33,12 +33,12 @@ class PDJointPosController(BaseController):
         else:
             if self.config['use_delta']:
                 delta_qpos = self._clip_action(action, lower, upper)
-                if self.config['use_target'] and self.target_qpos != None:
-                    target_qpos = self.target_qpos + delta_qpos
+                if self.config['use_target'] and self._target_qpos != None:
+                    target_qpos = self._target_qpos + delta_qpos
                 else:
                     target_qpos = self.qpos + delta_qpos
             else:
                 target_qpos = self._clip_action(action, qlimits[:, 0], qlimits[:, 1])
         
-        self.target_qpos = target_qpos
+        self._target_qpos = target_qpos
         return target_qpos

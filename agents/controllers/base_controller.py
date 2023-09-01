@@ -4,23 +4,8 @@ class BaseController:
     def __init__(self, config, robot, start, end, **kwargs):
         self.config = config
         self.robot = robot
-        self.start_index = start
-        self.end_index = end
-        
-    def set_target(self, action):
-        raise NotImplementedError
+        self.start_index, self.end_index = start, end   # Start and end index of qpos of current robot.
 
-    def _clip_action(self, action, low, high):
-        """Clip action to [low, high]."""
-        action = np.clip(action, low, high)
-        return action
-
-    def _clip_and_scale_action(self, action, low, high):
-        """Clip action to [-1, 1] and scale according to a range [low, high]."""
-        low, high = np.asarray(low), np.asarray(high)
-        action = np.clip(action, -1, 1)
-        return 0.5 * (high + low) + 0.5 * (high - low) * action
-    
     @property
     def qpos(self):
         """Get current joint positions."""
@@ -39,14 +24,6 @@ class BaseController:
     # -------------------------------------------------------------------------- #
     # Interfaces (implemented in subclasses)
     # -------------------------------------------------------------------------- #
-    def _preprocess_action(self, action: np.ndarray):
-        # TODO(jigu): support discrete action
-        action_dim = self.action_space.shape[0]
-        assert action.shape == (action_dim,), (action.shape, action_dim)
-        if self._normalize_action:
-            action = self._clip_and_scale_action(action)
-        return action
-    
     def reset(self):
         """Reset the controller.
         """
@@ -73,15 +50,23 @@ class BaseController:
         """
         raise NotImplementedError
 
-    def get_state(self) -> dict:
-        """Get the controller state."""
-        return {}
+    def _clip_action(self, action, low, high):
+        """Clip action to [low, high]."""
+        action = np.clip(action, low, high)
+        return action
 
-    def set_state(self, state: dict):
-        pass
+    def _clip_and_scale_action(self, action, low, high):
+        """Clip action to [-1, 1] and scale according to a range [low, high]."""
+        low, high = np.asarray(low), np.asarray(high)
+        action = np.clip(action, -1, 1)
+        return 0.5 * (high + low) + 0.5 * (high - low) * action
+    
 
 class DictController:
     def __init__(self, config=None, control_mode=None, robot=None, **kwargs):
+        """
+            Integrate arm controller and hand controller.
+        """
         config = config[control_mode]
         self.robot = robot
 
