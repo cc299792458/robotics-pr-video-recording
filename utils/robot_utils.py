@@ -15,15 +15,26 @@ class RobotInfo(NamedTuple):
     # root_offset: List[float] = [0.0, 0.0, 0.0]
 
 def generate_robot_info():
-    xarm_path = Path("./assets/robot/xarm6_description/")
-    allegro_hand_xarm6_left = RobotInfo(path=str(xarm_path / "xarm6_allegro_long_finger_tip_left.urdf"), hand_dof=16, arm_dof=6,
-                                      palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, np.pi])
-    allegro_hand_xarm6_right = RobotInfo(path=str(xarm_path / "xarm6_allegro_long_finger_tip_right.urdf"), hand_dof=16, arm_dof=6,
-                                      palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, 0])
+    xarm6_path = Path("./assets/robot/xarm6_description/")
+    xarm6_allegro_hand_left = RobotInfo(path=str(xarm6_path / "xarm6_allegro_long_finger_tip_left.urdf"), arm_dof=6, hand_dof=16,
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, np.pi])
+    xarm6_allegro_hand_right = RobotInfo(path=str(xarm6_path / "xarm6_allegro_long_finger_tip_right.urdf"), arm_dof=6, hand_dof=16, 
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, 0])
     
-    info_dict = dict(robot_left=allegro_hand_xarm6_left, robot_right=allegro_hand_xarm6_right)
+    xarm7_path = Path("./assets/robot/xarm7_description/")
+    xarm7_allegro_hand_left = RobotInfo(path=str(xarm7_path / "xarm7_allegro_long_finger_tip_left.urdf"), arm_dof=7, hand_dof=16, 
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, 0, -np.pi / 2, np.pi])
+    xarm7_allegro_hand_right = RobotInfo(path=str(xarm7_path / "xarm7_allegro_long_finger_tip_right.urdf"), arm_dof=7, hand_dof=16,
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, 0, -np.pi / 2, 0])
+
+    info_dict = dict(xarm6_allegro_hand_left=xarm6_allegro_hand_left, 
+                     xarm6_allegro_hand_right=xarm6_allegro_hand_right,
+                     xarm7_allegro_hand_left=xarm7_allegro_hand_left,
+                     xarm7_allegro_hand_right=xarm7_allegro_hand_right)
 
     return info_dict
+
+
 
 def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) -> sapien.Articulation:
     # TODO(chichu): update the color of fingers
@@ -31,26 +42,31 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
     info = generate_robot_info()[robot_name]
     filename = info.path
     robot_builder = loader.load_file_as_articulation_builder(filename)
-    if disable_self_collision:
-        for link_builder in robot_builder.get_link_builders():
-            link_builder.set_collision_groups(1, 1, 17, 0)
-    else:
-        for link_builder in robot_builder.get_link_builders():
-            # NOTE(chichu): These links are at the junction of palm and fingers
-            if link_builder.get_name() in ["link_9.0", "link_5.0", "link_1.0", "link_13.0", "base_link"]:
+    if 'allegro' in robot_name:
+        if disable_self_collision:
+            for link_builder in robot_builder.get_link_builders():
                 link_builder.set_collision_groups(1, 1, 17, 0)
+        else:
+            for link_builder in robot_builder.get_link_builders():
+                # NOTE(chichu): These links are at the junction of palm and fingers
+                if link_builder.get_name() in ["link_9.0", "link_5.0", "link_1.0", "link_13.0", "base_link"]:
+                    link_builder.set_collision_groups(1, 1, 17, 0)
+    elif 'ability' in robot_name:
+        pass
+    else:
+        raise NotImplementedError
     robot = robot_builder.build(fix_root_link=True)
     robot.set_name(robot_name)
 
-    robot_arm_control_params = np.array([2e5, 4e4, 5e2])  # This PD is far larger than real to improve stability
-    finger_control_params = np.array([2e2, 6e1, 1e1])
-    arm_joint_names = [f"joint{i}" for i in range(1, 7)]    # Xarm6 have 6 arm joints.
+    arm_control_params = np.array([2e5, 4e4, 5e2])  # This PD is far larger than real to improve stability
+    hand_control_params = np.array([2e2, 6e1, 1e1])
+    arm_joint_names = [f"joint{i}" for i in range(1, 8)]    # NOTE(chichu):This setting is compataible with both xarm6 and xarm7.
     for joint in robot.get_active_joints():
         name = joint.get_name()
         if name in arm_joint_names:
-            joint.set_drive_property(*(1 * robot_arm_control_params), mode="force")
+            joint.set_drive_property(*(1 * arm_control_params), mode="force")
         else:
-            joint.set_drive_property(*(1 * finger_control_params), mode="force")
+            joint.set_drive_property(*(1 * hand_control_params), mode="force")
 
     mat_physi = scene.engine.create_physical_material(1.5, 1, 0.01)
     for link in robot.get_links():

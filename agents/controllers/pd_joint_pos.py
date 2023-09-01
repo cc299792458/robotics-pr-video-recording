@@ -11,7 +11,7 @@ class PDJointPosController(BaseController):
         self.target_qpos = self.qpos
 
     def set_target(self, action):
-        action = action[self.start_index:self.end_index]
+        # action = action[self.start_index:self.end_index]
         qlimits = self.qlimits
         lower, upper = self.config['lower'], self.config['upper']
         if self.config['normalize_action']:

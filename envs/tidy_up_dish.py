@@ -3,8 +3,8 @@ import sapien.core as sapien
 
 
 class TidyUpDish(BaseEnv):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def _add_workspace(self):
 

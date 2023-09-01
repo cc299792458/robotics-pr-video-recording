@@ -2,11 +2,11 @@ import numpy as np
 from dataclasses import dataclass
 
 class BaseController:
-    def __init__(self, config, robot, **kwargs):
+    def __init__(self, config, robot, start, end, **kwargs):
         self.config = config
         self.robot = robot
-        self.start_index = config['start']
-        self.end_index = config['end']
+        self.start_index = start
+        self.end_index = end
         
     def set_target(self, action):
         raise NotImplementedError
@@ -90,16 +90,25 @@ class DictController:
         config = config[control_mode]
         self.robot = robot
 
+        arm_dof, hand_dof = config['arm']['arm_dof'], config['hand']['hand_dof']
+        self.robot_dof = arm_dof + hand_dof
+
+        arm_action_dim, hand_action_dim = config['arm']['action_dim'], config['hand']['action_dim']
+        self.action_dim = arm_action_dim + hand_action_dim
+        self.action_mapping = dict(arm=[0, arm_action_dim], hand=[arm_action_dim, self.action_dim])
+
         arm_controller_cls = config['arm']['controller_cls']
-        arm_controller = arm_controller_cls(config=config['arm'], robot=robot, **kwargs)
+        arm_controller = arm_controller_cls(config=config['arm'], robot=robot, 
+                                            start=0, end=arm_dof, **kwargs)
         hand_controller_cls = config['hand']['controller_cls']
-        hand_controller = hand_controller_cls(config=config['hand'], robot=robot, **kwargs)
+        hand_controller = hand_controller_cls(config=config['hand'], robot=robot, 
+                                            start=arm_dof, end=self.robot_dof, **kwargs)
 
         self.dict_controller = dict(arm=arm_controller, hand=hand_controller)
     
     def set_target(self, action):
-        arm_action = self.dict_controller['arm'].set_target(action)
-        hand_action = self.dict_controller['hand'].set_target(action)
+        arm_action = self.dict_controller['arm'].set_target(action[self.action_mapping['arm'][0]:self.action_mapping['arm'][1]])
+        hand_action = self.dict_controller['hand'].set_target(action[self.action_mapping['hand'][0]:self.action_mapping['hand'][1]])
 
         action = np.concatenate([arm_action, hand_action])
         self.robot.set_drive_target(action)

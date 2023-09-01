@@ -4,7 +4,7 @@ import sapien.core as sapien
 from typing import Dict, Sequence
 
 from agents.controllers import DictController
-from agents.configs.allegro_hand import XArm6AllegroDefaultConfig
+from agents.configs.allegro_hand import XArmAllegroDefaultConfig
 
 def get_active_joint_indices(
     articulation: sapien.Articulation, joint_names: Sequence[str]
@@ -19,8 +19,8 @@ def get_active_joints(articulation: sapien.Articulation, joint_names: Sequence[s
     return [joints[idx] for idx in joint_indices]
 
 def set_up_controller(arm_name='xarm6', hand_name='allegro', control_mode=None, robot=None, **kwargs):
-    if arm_name == 'xarm6' and hand_name == 'allegro':
-        config = XArm6AllegroDefaultConfig()
+    if hand_name == 'allegro':
+        config = XArmAllegroDefaultConfig(arm_name)
     elif hand_name == 'ability':
         raise NotImplementedError
     

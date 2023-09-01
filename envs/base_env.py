@@ -6,11 +6,10 @@ from utils.controller_utils import set_up_controller
 from utils.robot_utils import load_robot, generate_robot_info, recover_action, compute_inverse_kinematics, get_kinematic_model
 
 
-
 class BaseEnv():
-    def __init__(self):
+    def __init__(self, arm_name='xarm6', hand_name='allegro', control_mode='pd_joint_pos'):
         self._init_engine_renderer()
-        self._init_scene()
+        self._init_scene(arm_name, hand_name, control_mode)
         self._init_viewer()
 
     def _init_engine_renderer(self):
@@ -19,13 +18,13 @@ class BaseEnv():
         self._engine.set_renderer(self._renderer)
         self._engine.set_log_level("error")
 
-    def _init_scene(self):
+    def _init_scene(self, arm_name, hand_name, control_mode):
         self._simulation_freq = 500
         self._scene = self._engine.create_scene()
         self._scene.set_timestep(1 / self._simulation_freq)  # Simulate in 500Hz
         self._add_background()
         self._add_table()
-        self._add_agent()
+        self._add_agent(arm_name, hand_name, control_mode)
         self._add_workspace()
         self._add_actor()
         
@@ -58,19 +57,20 @@ class BaseEnv():
         table.set_pose(pose)
         self.table = table
 
-    def _add_agent(self, fix_root_link=True, x_offset=-0.15, y_offset=0.4):
-        self._init_control_property()   # initialize control property before adding robots.
+    def _add_agent(self, arm_name, hand_name, control_mode, x_offset=-0.15, y_offset=0.4):
+        self._init_control_property(control_mode=control_mode)   # initialize control property before adding robots.
         # NOTE(chichu): allegro hands used here have longer customized finger tips
-        # TODO(chichu): add xarm7 and ability hand.
-        self.robot_left = load_robot(self._scene, 'robot_left')
+        # TODO(chichu): add ability hand.
+        robot_name = arm_name + '_' + hand_name + '_hand'
+        self.robot_name = [robot_name+'_left', robot_name+'_right']
+        self.robot_left = load_robot(self._scene, self.robot_name[0])
         self.robot_left.set_root_pose(sapien.Pose([x_offset, -y_offset, -0.20], [0, 0, 0, 1]))
-        # self.kinematic_model_left = get_kinematic_model(self.robot_left)
-        self.controller_robot_left = set_up_controller(arm_name='xarm6', hand_name='allegro', 
+        self.controller_robot_left = set_up_controller(arm_name=arm_name, hand_name=hand_name, 
                                                        control_mode=self._control_mode, robot=self.robot_left)
-        self.robot_right = load_robot(self._scene, 'robot_right')
+        self.robot_right = load_robot(self._scene, self.robot_name[1])
         self.robot_right.set_root_pose(sapien.Pose([x_offset, y_offset, -0.20], [0, 0, 0, 1]))
-        self.controller_robot_right = set_up_controller(arm_name='xarm6', hand_name='allegro', control_mode=self._control_mode,
-                                                        robot=self.robot_right)
+        self.controller_robot_right = set_up_controller(arm_name=arm_name, hand_name=hand_name, 
+                                                        control_mode=self._control_mode, robot=self.robot_right)
         self.robot = [self.robot_left, self.robot_right]
         self.controller = [self.controller_robot_left, self.controller_robot_right]
         self._init_cache_robot_info()
@@ -117,8 +117,9 @@ class BaseEnv():
         self.step_action(action)
 
     def step_action(self, action):
-        self._before_control_step()
-        self._set_target(action)
+        if action is not None:
+            self._before_control_step()
+            self._set_target(action)
         for _ in range(self._frame_skip):
             self._before_simulation_step()
             self._simulation_step()
@@ -136,19 +137,6 @@ class BaseEnv():
         for index in range(len(self.robot)):
             self.controller[index].set_target(action[index])
         return None
-            # Use inverse kinematics to calculate target arm_qpos
-            # action = np.clip(action, -1, 1)
-            # self.target_root_velocity[index] = (recover_action(action[:6], self.velocity_limit[index][:6]))
-            # palm_jacobian = self.kinematic_model[index].compute_end_link_spatial_jacobian(self.current_qpos[index][:self.arm_dof[index]])
-            # arm_qvel = compute_inverse_kinematics(self.target_root_velocity[index], palm_jacobian)[:self.arm_dof[index]]
-            # arm_qvel = np.clip(arm_qvel, -np.pi / 1, np.pi / 1)
-            # arm_qpos = arm_qvel * self._control_time_step + self.robot[index].get_qpos()[:self.arm_dof[index]]
-            # hand_qpos = recover_action(action[6:], self.robot[index].get_qlimits()[self.arm_dof[index]:])
-            # target_qpos = np.concatenate([arm_qpos, hand_qpos])
-            # target_qvel = np.zeros_like(target_qpos)
-            # target_qvel[:self.arm_dof[index]] = arm_qvel
-            # self.robot[index].set_drive_target(target_qpos)
-            # self.robot[index].set_drive_velocity_target(target_qvel)
 
     def _after_control_step(self):
         return None
@@ -171,7 +159,6 @@ class BaseEnv():
         pass
 
     def _init_cache_robot_info(self, root_frame='robot'):
-        self.robot_name = ['robot_left', 'robot_right']
         self.robot_info = generate_robot_info()
         self.arm_dof, self.hand_dof = [], []
         self.velocity_limit, self.kinematic_model, self.robot_collision_links = [], [], []
@@ -208,27 +195,27 @@ class BaseEnv():
             # self.palm_link_name.append(self.robot_info[name].palm_name)
             # self.palm_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.palm_link_name[0]][0])
 
-            finger_tip_names = (["link_15.0_tip", "link_3.0_tip", "link_7.0_tip", "link_11.0_tip"])
-            finger_contact_link_name = [
-                "link_15.0_tip", "link_15.0", "link_14.0",
-                "link_3.0_tip", "link_3.0", "link_2.0", "link_1.0",
-                "link_7.0_tip", "link_7.0", "link_6.0", "link_5.0",
-                "link_11.0_tip", "link_11.0", "link_10.0", "link_9.0"
-            ]
-            robot_link_names = [link.get_name() for link in self.robot[i].get_links()]
-            self.finger_tip_links.append([self.robot[i].get_links()[robot_link_names.index(name)] for name in finger_tip_names])
-            self.finger_contact_links.append([self.robot[i].get_links()[robot_link_names.index(name)] for name in
-                                        finger_contact_link_name])
-            self.finger_contact_ids.append(np.array([0] * 3 + [1] * 4 + [2] * 4 + [3] * 4 + [4]))
-            self.finger_tip_pos.append(np.zeros([len(finger_tip_names), 3]))
+            # finger_tip_names = (["link_15.0_tip", "link_3.0_tip", "link_7.0_tip", "link_11.0_tip"])
+            # finger_contact_link_name = [
+            #     "link_15.0_tip", "link_15.0", "link_14.0",
+            #     "link_3.0_tip", "link_3.0", "link_2.0", "link_1.0",
+            #     "link_7.0_tip", "link_7.0", "link_6.0", "link_5.0",
+            #     "link_11.0_tip", "link_11.0", "link_10.0", "link_9.0"
+            # ]
+            # robot_link_names = [link.get_name() for link in self.robot[i].get_links()]
+            # self.finger_tip_links.append([self.robot[i].get_links()[robot_link_names.index(name)] for name in finger_tip_names])
+            # self.finger_contact_links.append([self.robot[i].get_links()[robot_link_names.index(name)] for name in
+            #                             finger_contact_link_name])
+            # self.finger_contact_ids.append(np.array([0] * 3 + [1] * 4 + [2] * 4 + [3] * 4 + [4]))
+            # self.finger_tip_pos.append(np.zeros([len(finger_tip_names), 3]))
             
-            self.object_in_tip.append(np.zeros([len(finger_tip_names), 3]))
-            self.target_in_object.append(np.zeros([3]))
-            self.target_in_object_angle.append(np.zeros([1]))
-            self.object_lift.append(0)
+            # self.object_in_tip.append(np.zeros([len(finger_tip_names), 3]))
+            # self.target_in_object.append(np.zeros([3]))
+            # self.target_in_object_angle.append(np.zeros([1]))
+            # self.object_lift.append(0)
 
             # Contact buffer
-            self.robot_object_contact.append(np.zeros(len(finger_tip_names) + 1))
+            # self.robot_object_contact.append(np.zeros(len(finger_tip_names) + 1))
             
             self.ee_link_last_pose.append(0)
             self.current_qpos.append(0)
