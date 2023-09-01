@@ -1,13 +1,15 @@
-from .base_controller import BaseController
-from utils.sapien_utils import get_entity_by_name
-from typing import Union, Sequence
-from scipy.spatial.transform import Rotation
+import numpy as np
 import sapien.core as sapien
 
-import numpy as np
+from .base_controller import BaseController
+from utils.sapien_utils import get_entity_by_name
+from scipy.spatial.transform import Rotation
 
 class PDEEPoseController(BaseController):
     def __init__(self, ee_link_name='base_link', **kwargs):
+        """
+            Control the end effect's pose.
+        """
         super().__init__(**kwargs)
         self._init_pmodel()
         self.ee_link = get_entity_by_name(self.robot.get_links(), ee_link_name)
@@ -27,13 +29,19 @@ class PDEEPoseController(BaseController):
         self._target_pose = self.ee_pose_at_base
 
     def set_target(self, action):
-        # action = action[self.start_index:self.end_index]
-        if self.config['normalize_action']:
-            self._target_pose = self.compute_target_pose(action)
-            self._target_qpos = self.compute_IK()
-        else:
-            raise NotImplementedError
-        
+        """
+            Args:
+                action: 6 digits in total. 
+                        First 3 digits: [delta_x, delta_y, delta_z],
+                        Last 3 digits related to rotation.
+            Some Options:
+                normalize_action: scale the input action to [-1, 1].
+                use_delta: calculate next target based on current qpos or last target.
+                use_target: calculate next target based on last target. 
+        """
+        self._target_pose = self.compute_target_pose(action)
+        self._target_qpos = self.compute_IK()
+
         return self._target_qpos
     
     @property
@@ -50,6 +58,9 @@ class PDEEPoseController(BaseController):
         return to_base.transform(self.ee_pose)
     
     def _clip_and_scale_action(self, action):
+        """
+            Clip the pose and rot respectively.
+        """
         # NOTE(xiqiang): rotation should be clipped by norm.
         pos_action = super()._clip_and_scale_action(
             action[:3], self.config['lower'], self.config['upper'])
@@ -61,12 +72,16 @@ class PDEEPoseController(BaseController):
         return np.hstack([pos_action, rot_action])
 
     def compute_target_pose(self, action):
+        """
+            Compute next target pose.
+        """
         if self.config['normalize_action']:
             action = self._clip_and_scale_action(action)
         if self.config['use_delta']:
             delta_pos, delta_rot = action[0:3], action[3:6]
             delta_quat = Rotation.from_rotvec(delta_rot).as_quat()[[3, 0, 1, 2]]
             delta_pose = sapien.Pose(delta_pos, delta_quat)
+            # NOTE(chichu): Use the base frame.
             if self.config['use_target']:
                 target_pose = delta_pose * self._target_pose
             else:
@@ -79,6 +94,9 @@ class PDEEPoseController(BaseController):
         return target_pose
 
     def compute_IK(self, max_iterations=1000):
+        """
+            Compute next target qpos.
+        """
         # Assume the target pose is defined in the base frame
         result, success, error = self.pmodel.compute_inverse_kinematics(
             self.ee_link_idx,

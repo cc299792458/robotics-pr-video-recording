@@ -1,5 +1,4 @@
 import numpy as np
-from dataclasses import dataclass
 
 class BaseController:
     def __init__(self, config, robot, start, end, **kwargs):
@@ -80,10 +79,6 @@ class BaseController:
 
     def set_state(self, state: dict):
         pass
-    
-# @dataclass
-class ControllerConfig:
-    controller_cls = BaseController    
 
 class DictController:
     def __init__(self, config=None, control_mode=None, robot=None, **kwargs):

@@ -1,9 +1,9 @@
-import numpy as np
-
-from typing import Union, Sequence
-from agents.controllers.base_controller import BaseController, ControllerConfig
+from agents.controllers.base_controller import BaseController
 
 class PDJointPosController(BaseController):
+    """
+        Directly control the qpos of robot.
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
     
@@ -11,7 +11,14 @@ class PDJointPosController(BaseController):
         self.target_qpos = self.qpos
 
     def set_target(self, action):
-        # action = action[self.start_index:self.end_index]
+        """
+            Args:
+                action: action.shape equal to (robot.dof, ).
+            Some Options:
+                normalize_action: scale the input action to [-1, 1].
+                use_delta: calculate next target based on current qpos or last target.
+                use_target: calculate next target based on last target. 
+        """
         qlimits = self.qlimits
         lower, upper = self.config['lower'], self.config['upper']
         if self.config['normalize_action']:

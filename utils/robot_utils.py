@@ -1,10 +1,8 @@
-from pathlib import Path
-from typing import NamedTuple, List, Dict
-
 import numpy as np
 import sapien.core as sapien
 
-from kinematics.kinematics_helper import PartialKinematicModel
+from pathlib import Path
+from typing import NamedTuple, List
 
 class RobotInfo(NamedTuple):
     path: str
@@ -34,14 +32,16 @@ def generate_robot_info():
 
     return info_dict
 
-
-
-def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) -> sapien.Articulation:
-    # TODO(chichu): update the color of fingers
+def load_robot(scene: sapien.Scene, robot_name: str, disable_self_collision: bool = False) -> sapien.Articulation:
+    """
+        Load robot, set up collsion, drive(control) and visual property.
+    """
+    # Load robot
     loader = scene.create_urdf_loader()
     info = generate_robot_info()[robot_name]
     filename = info.path
     robot_builder = loader.load_file_as_articulation_builder(filename)
+    # Set up collision property
     if 'allegro' in robot_name:
         if disable_self_collision:
             for link_builder in robot_builder.get_link_builders():
@@ -57,7 +57,7 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
         raise NotImplementedError
     robot = robot_builder.build(fix_root_link=True)
     robot.set_name(robot_name)
-
+    # Set up drive(control) property
     arm_control_params = np.array([2e5, 4e4, 5e2])  # This PD is far larger than real to improve stability
     hand_control_params = np.array([2e2, 6e1, 1e1])
     arm_joint_names = [f"joint{i}" for i in range(1, 8)]    # NOTE(chichu):This setting is compataible with both xarm6 and xarm7.
@@ -67,7 +67,7 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
             joint.set_drive_property(*(1 * arm_control_params), mode="force")
         else:
             joint.set_drive_property(*(1 * hand_control_params), mode="force")
-
+    # Set up visual material
     mat_physi = scene.engine.create_physical_material(1.5, 1, 0.01)
     for link in robot.get_links():
         for geom in link.get_collision_shapes():
@@ -76,22 +76,3 @@ def load_robot(scene: sapien.Scene, robot_name, disable_self_collision=False) ->
             geom.set_physical_material(mat_physi)
 
     return robot
-
-def recover_action(action, limit):
-    action = (action + 1) / 2 * (limit[:, 1] - limit[:, 0]) + limit[:, 0]
-    return action
-
-def compute_inverse_kinematics(delta_pose_world, palm_jacobian, damping=0.05):
-    lmbda = np.eye(6) * (damping ** 2)
-    # When you need the pinv for matrix multiplication, always use np.linalg.solve but not np.linalg.pinv
-    delta_qpos = palm_jacobian.T @ \
-                 np.linalg.lstsq(palm_jacobian.dot(palm_jacobian.T) + lmbda, delta_pose_world, rcond=None)[0]
-
-    return delta_qpos
-
-def get_kinematic_model(robot, arm='xarm6'):
-    if arm == 'xarm6':
-        arm_dof=6
-    start_joint_name = robot.get_joints()[1].get_name()
-    end_joint_name = robot.get_active_joints()[arm_dof - 1].get_name()
-    return PartialKinematicModel(robot, start_joint_name, end_joint_name)

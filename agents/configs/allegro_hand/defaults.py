@@ -1,4 +1,4 @@
-from agents.controllers import PDJointPosController, PDJointVelController, PDEEPoseController
+from agents.controllers import PDJointPosController, PDEEPoseController
 
 def XArmAllegroDefaultConfig(arm_name='xarm6'):
         use_target = True

@@ -3,7 +3,7 @@ import sapien.core as sapien
 from sapien.utils import Viewer
 
 from utils.controller_utils import set_up_controller
-from utils.robot_utils import load_robot, generate_robot_info, recover_action, compute_inverse_kinematics, get_kinematic_model
+from utils.robot_utils import load_robot, generate_robot_info
 
 
 class BaseEnv():
@@ -57,18 +57,21 @@ class BaseEnv():
         table.set_pose(pose)
         self.table = table
 
-    def _add_agent(self, arm_name, hand_name, control_mode, x_offset=-0.15, y_offset=0.4):
+    def _add_agent(self, arm_name, hand_name, control_mode, x_offset=-0.15, y_offset=0.4, z_offset=-0.2):
+        """
+            Initialize control property, build robots and set up controllers.
+        """
         self._init_control_property(control_mode=control_mode)   # initialize control property before adding robots.
         # NOTE(chichu): allegro hands used here have longer customized finger tips
         # TODO(chichu): add ability hand.
         robot_name = arm_name + '_' + hand_name + '_hand'
         self.robot_name = [robot_name+'_left', robot_name+'_right']
         self.robot_left = load_robot(self._scene, self.robot_name[0])
-        self.robot_left.set_root_pose(sapien.Pose([x_offset, -y_offset, -0.20], [0, 0, 0, 1]))
+        self.robot_left.set_root_pose(sapien.Pose([x_offset, -y_offset, z_offset], [0, 0, 0, 1]))
         self.controller_robot_left = set_up_controller(arm_name=arm_name, hand_name=hand_name, 
                                                        control_mode=self._control_mode, robot=self.robot_left)
         self.robot_right = load_robot(self._scene, self.robot_name[1])
-        self.robot_right.set_root_pose(sapien.Pose([x_offset, y_offset, -0.20], [0, 0, 0, 1]))
+        self.robot_right.set_root_pose(sapien.Pose([x_offset, y_offset, z_offset], [0, 0, 0, 1]))
         self.controller_robot_right = set_up_controller(arm_name=arm_name, hand_name=hand_name, 
                                                         control_mode=self._control_mode, robot=self.robot_right)
         self.robot = [self.robot_left, self.robot_right]
@@ -93,13 +96,16 @@ class BaseEnv():
         self.viewer.window.set_camera_parameters(near=0.05, far=100, fovy=1.2)
 
     def _init_control_property(self, control_freq=20, control_mode='pd_joint_pos'):
-        # TODO(chichu): add joint control, delta pose control based on the current target version
+        """
+            Initialize basic control property.
+            NOTE(chichu): pid gains are set in load_robot() function.
+        """
         self._control_mode = control_mode
         self._control_freq = control_freq
         assert (self._simulation_freq % self._control_freq == 0)
         self._frame_skip = self._simulation_freq // self._control_freq
         self._control_time_step = 1 / self._control_freq
-        # NOTE(chichu): pid gains are set in load_robot() function.
+        
 
     def reset(self):
         # Set robot initial qpos
@@ -161,63 +167,6 @@ class BaseEnv():
     def _init_cache_robot_info(self, root_frame='robot'):
         self.robot_info = generate_robot_info()
         self.arm_dof, self.hand_dof = [], []
-        self.velocity_limit, self.kinematic_model, self.robot_collision_links = [], [], []
-        self.root_frame, self.base_frame_pos = [], []
-        self.ee_link_name, self.ee_link = [], []
-        self.finger_tip_links, self.finger_contact_links = [], []
-        self.finger_contact_ids, self.finger_tip_pos = [], []
-        self.object_in_tip, self.target_in_object, self.target_in_object_angle = [], [], []
-        self.object_lift = []
-        self.robot_object_contact = []
-        self.ee_link_last_pose, self.ee_link_new_pose = [], []
-        self.current_qpos = []
-        self.target_root_velocity = []
-        self.cartesian_error = []
         for i, name in enumerate(self.robot_name):
             self.arm_dof.append(self.robot_info[name].arm_dof)
             self.hand_dof.append(self.robot_info[name].hand_dof)
-            
-            velocity_limit = np.array([1] * self.arm_dof[i] + [np.pi] * self.hand_dof[i])
-            self.velocity_limit.append(np.stack([-velocity_limit, velocity_limit], axis=1))
-            
-            # start_joint_name = self.robot[i].get_joints()[1].get_name()
-            # end_joint_name = self.robot[i].get_active_joints()[self.arm_dof[i] - 1].get_name()
-            # self.kinematic_model.append(PartialKinematicModel(self.robot[i], start_joint_name, end_joint_name))
-            
-            self.robot_collision_links.append([link for link in self.robot[i].get_links() if len(link.get_collision_shapes()) > 0])
-            
-            self.root_frame.append(root_frame)
-            self.base_frame_pos.append(np.zeros(3))
-
-            # self.ee_link_name.append(self.kinematic_model[i].end_link_name)
-            # self.ee_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name[0]][0])
-            
-            # self.palm_link_name.append(self.robot_info[name].palm_name)
-            # self.palm_link.append([link for link in self.robot[i].get_links() if link.get_name() == self.palm_link_name[0]][0])
-
-            # finger_tip_names = (["link_15.0_tip", "link_3.0_tip", "link_7.0_tip", "link_11.0_tip"])
-            # finger_contact_link_name = [
-            #     "link_15.0_tip", "link_15.0", "link_14.0",
-            #     "link_3.0_tip", "link_3.0", "link_2.0", "link_1.0",
-            #     "link_7.0_tip", "link_7.0", "link_6.0", "link_5.0",
-            #     "link_11.0_tip", "link_11.0", "link_10.0", "link_9.0"
-            # ]
-            # robot_link_names = [link.get_name() for link in self.robot[i].get_links()]
-            # self.finger_tip_links.append([self.robot[i].get_links()[robot_link_names.index(name)] for name in finger_tip_names])
-            # self.finger_contact_links.append([self.robot[i].get_links()[robot_link_names.index(name)] for name in
-            #                             finger_contact_link_name])
-            # self.finger_contact_ids.append(np.array([0] * 3 + [1] * 4 + [2] * 4 + [3] * 4 + [4]))
-            # self.finger_tip_pos.append(np.zeros([len(finger_tip_names), 3]))
-            
-            # self.object_in_tip.append(np.zeros([len(finger_tip_names), 3]))
-            # self.target_in_object.append(np.zeros([3]))
-            # self.target_in_object_angle.append(np.zeros([1]))
-            # self.object_lift.append(0)
-
-            # Contact buffer
-            # self.robot_object_contact.append(np.zeros(len(finger_tip_names) + 1))
-            
-            self.ee_link_last_pose.append(0)
-            self.current_qpos.append(0)
-            self.target_root_velocity.append(0)
-            self.cartesian_error.append(0)
