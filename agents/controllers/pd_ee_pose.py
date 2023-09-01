@@ -71,7 +71,7 @@ class PDEEPoseController(BaseController):
         rot_action = rot_action * self.config['rot_bound']
         return np.hstack([pos_action, rot_action])
 
-    def compute_target_pose(self, action):
+    def compute_target_pose(self, action, frame='base'):
         """
             Compute next target pose.
         """
@@ -81,11 +81,14 @@ class PDEEPoseController(BaseController):
             delta_pos, delta_rot = action[0:3], action[3:6]
             delta_quat = Rotation.from_rotvec(delta_rot).as_quat()[[3, 0, 1, 2]]
             delta_pose = sapien.Pose(delta_pos, delta_quat)
-            # NOTE(chichu): Use the base frame.
             if self.config['use_target']:
-                target_pose = delta_pose * self._target_pose
+                pre_pose = self._target_pose
             else:
-                target_pose = delta_pose * self.ee_pose_at_base
+                pre_pose = self.ee_pose_at_base
+            if frame == 'base':
+                target_pose = delta_pose * pre_pose
+            elif frame == 'ee':
+                target_pose = pre_pose * delta_pose
         else:
             target_pos, target_rot = action[0:3], action[3:6]
             target_quat = Rotation.from_rotvec(target_rot).as_quat()[[3, 0, 1, 2]]

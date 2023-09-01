@@ -16,12 +16,12 @@ def main():
     while not env.viewer.closed:
         action = np.zeros([(env.controller[0].action_dim)])[np.newaxis, :].repeat(2, axis=0)
         if flag:
-            action[0, 3] = 0.2
-            action[1, 3] = 0.2
+            action[0, 2] = 0.2
+            action[1, 2] = 0.2
             flag = False
         else:
-            action[0, 3] = 0
-            action[1, 3] = 0
+            action[0, 2] = 0
+            action[1, 2] = 0
         # action[0, 4], action[1, 4] = -np.pi/2, -np.pi/2
         # action[0, 5] = np.pi
         # action = None
