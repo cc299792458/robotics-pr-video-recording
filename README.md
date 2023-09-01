@@ -14,6 +14,6 @@ conda activate pr-vdrcd
 
 **Then install the package needed by:**
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 

@@ -14,6 +14,6 @@ setup(
     license='',
     author="SU Lab",
     install_requires=[
-         'sapien', 'numpy'
+         'sapien', 'numpy', 'scipy'
     ],
 )
