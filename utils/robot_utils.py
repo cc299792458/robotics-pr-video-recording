@@ -18,17 +18,30 @@ def generate_robot_info():
                                         palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, np.pi])
     xarm6_allegro_hand_right = RobotInfo(path=str(xarm6_path / "xarm6_allegro_long_finger_tip_right.urdf"), arm_dof=6, hand_dof=16, 
                                         palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, 0])
+    xarm6_ability_hand_left = RobotInfo(path=str(xarm6_path / "xarm6_ability_left.urdf"), arm_dof=6, hand_dof=10,
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, np.pi])
+    xarm6_ability_hand_right = RobotInfo(path=str(xarm6_path / "xarm6_ability_right.urdf"), arm_dof=6, hand_dof=10, 
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, -np.pi / 2, 0])
     
+
     xarm7_path = Path("./assets/robot/xarm7_description/")
     xarm7_allegro_hand_left = RobotInfo(path=str(xarm7_path / "xarm7_allegro_long_finger_tip_left.urdf"), arm_dof=7, hand_dof=16, 
                                         palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, 0, -np.pi / 2, np.pi])
     xarm7_allegro_hand_right = RobotInfo(path=str(xarm7_path / "xarm7_allegro_long_finger_tip_right.urdf"), arm_dof=7, hand_dof=16,
                                         palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, 0, -np.pi / 2, 0])
+    xarm7_ability_hand_left = RobotInfo(path=str(xarm7_path / "xarm7_ability_left.urdf"), arm_dof=7, hand_dof=10, 
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, 0, -np.pi / 2, np.pi])
+    xarm7_ability_hand_right = RobotInfo(path=str(xarm7_path / "xarm7_ability_right.urdf"), arm_dof=7, hand_dof=10,
+                                        palm_name="palm_center", arm_init_qpos=[0, 0, 0, 0, 0, -np.pi / 2, 0])
 
     info_dict = dict(xarm6_allegro_hand_left=xarm6_allegro_hand_left, 
                      xarm6_allegro_hand_right=xarm6_allegro_hand_right,
+                     xarm6_ability_hand_left=xarm6_ability_hand_left,
+                     xarm6_ability_hand_right=xarm6_ability_hand_right,
                      xarm7_allegro_hand_left=xarm7_allegro_hand_left,
-                     xarm7_allegro_hand_right=xarm7_allegro_hand_right)
+                     xarm7_allegro_hand_right=xarm7_allegro_hand_right,
+                     xarm7_ability_hand_left=xarm7_ability_hand_left,
+                     xarm7_ability_hand_right=xarm7_ability_hand_right)
 
     return info_dict
 
