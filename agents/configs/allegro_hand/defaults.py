@@ -1,3 +1,4 @@
+import numpy as np
 from agents.controllers import PDJointPosController, PDEEPoseController
 
 def XArmAllegroDefaultConfig(arm_name='xarm6'):
@@ -19,7 +20,7 @@ def XArmAllegroDefaultConfig(arm_name='xarm6'):
                                 action_dim=arm_dof,
                                 arm_dof=arm_dof,
                                 controller_cls=PDEEPoseController)
-        arm_pd_ee_delta_pose = dict(lower=-1, upper=1, rot_bound=1, 
+        arm_pd_ee_delta_pose = dict(lower=-1, upper=1, rot_bound=np.pi/2, 
                                     normalize_action=True,
                                     use_delta=True,
                                     use_target=use_target, 

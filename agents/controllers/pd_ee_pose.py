@@ -71,7 +71,7 @@ class PDEEPoseController(BaseController):
         rot_action = rot_action * self.config['rot_bound']
         return np.hstack([pos_action, rot_action])
 
-    def compute_target_pose(self, action, frame='ee_align'):
+    def compute_target_pose(self, action, frame='ee'):
         """
             Compute next target pose.
         """
