@@ -17,8 +17,6 @@ class TidyUpDish(BaseEnv):
         # add wall_right
         builder = self._scene.create_actor_builder()
         builder.add_box_visual(half_size=[0.05, 3.0, 3.5])
-        # wall_right = builder.build_kinematic(name = 'wall_right') # can not be affected by external forces
-        # wall_right.set_pose(sapien.Pose(p=[0.350, 2.294, -1],q=[0.707, 0, 0, -0.707]))
 
         # add wall_left
         builder = self._scene.create_actor_builder()

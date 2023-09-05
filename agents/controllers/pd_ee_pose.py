@@ -66,7 +66,7 @@ class PDEEPoseController(BaseController):
             action[:3], self.config['lower'], self.config['upper'])
         rot_action = action[3:]
         rot_norm = np.linalg.norm(rot_action)
-        if rot_norm != 0:
+        if rot_norm > 1:
             rot_action = rot_action / rot_norm
         rot_action = rot_action * self.config['rot_bound']
         return np.hstack([pos_action, rot_action])
