@@ -17,7 +17,7 @@ def XArmAllegroDefaultConfig(arm_name='xarm6'):
                                 normalize_action=False,
                                 use_delta=False, 
                                 use_target=None,
-                                action_dim=arm_dof,
+                                action_dim=7,
                                 arm_dof=arm_dof,
                                 controller_cls=PDEEPoseController)
         arm_pd_ee_delta_pose = dict(lower=-1, upper=1, rot_bound=np.pi/2, 

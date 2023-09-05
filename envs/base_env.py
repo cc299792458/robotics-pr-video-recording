@@ -106,7 +106,6 @@ class BaseEnv():
         self._frame_skip = self._simulation_freq // self._control_freq
         self._control_time_step = 1 / self._control_freq
         
-
     def reset(self):
         # Set robot initial qpos
         for index in range(len(self.robot)):
@@ -131,6 +130,12 @@ class BaseEnv():
             self._simulation_step()
             self._after_simulation_step()
         self._after_control_step()
+    
+    def get_ee_pose(self):
+        for i in range(len(self.robot)):
+            self.ee_pose[i] = [link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name][0].get_pose()
+
+        return self.ee_pose
 
     def _before_control_step(self):
         return
@@ -167,6 +172,9 @@ class BaseEnv():
     def _init_cache_robot_info(self, root_frame='robot'):
         self.robot_info = generate_robot_info()
         self.arm_dof, self.hand_dof = [], []
+        self.ee_link_name = 'base_link'
+        self.ee_pose = []
         for i, name in enumerate(self.robot_name):
             self.arm_dof.append(self.robot_info[name].arm_dof)
             self.hand_dof.append(self.robot_info[name].hand_dof)
+            self.ee_pose.append([link for link in self.robot[i].get_links() if link.get_name() == self.ee_link_name][0].get_pose())

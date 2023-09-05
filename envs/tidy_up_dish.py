@@ -91,3 +91,7 @@ class TidyUpDish(BaseEnv):
         builder.add_multiple_collisions_from_file(filename='./assets/kitchen/Dishrack/dishrack.obj')
         dish_rack = builder.build(name = 'dish_rack') # can not be affected by external forces
         dish_rack.set_pose(sapien.Pose(p=[-0.975, -0.601, 0.020],q=[0, 0, 0.707, 0.707]))
+    
+    def get_actor_pose(self, actor_name):
+        # TODO(haoyang): get actor's pose of actor_name. 
+        return None

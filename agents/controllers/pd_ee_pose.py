@@ -56,6 +56,10 @@ class PDEEPoseController(BaseController):
     def ee_pose_at_base(self):
         to_base = self.robot.pose.inv()
         return to_base.transform(self.ee_pose)
+
+    def pose_at_base(self, pose):
+        to_base = self.robot.pose.inv()
+        return to_base.transform(pose)
     
     def _clip_and_scale_action(self, action):
         """
@@ -94,9 +98,10 @@ class PDEEPoseController(BaseController):
                 target_pose = delta_pose * prev_pose
                 target_pose.set_p(prev_pose.p + delta_pos)
         else:
-            target_pos, target_rot = action[0:3], action[3:6]
-            target_quat = Rotation.from_rotvec(target_rot).as_quat()[[3, 0, 1, 2]]
-            target_pose = sapien.Pose(target_pos, target_quat)
+            target_pose = self.pose_at_base(sapien.Pose(action[0:3], action[3:7])) # Transfer target pose to base coordinate.
+            # target_pos, target_rot = action[0:3], action[3:6]
+            # target_quat = Rotation.from_rotvec(target_rot).as_quat()[[3, 0, 1, 2]]
+            # target_pose = sapien.Pose(target_pos, target_quat)
 
         return target_pose
 
