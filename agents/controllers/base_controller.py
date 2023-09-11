@@ -97,3 +97,4 @@ class DictController:
     def reset(self):
         self.dict_controller['arm'].reset()
         self.dict_controller['hand'].reset()
+    

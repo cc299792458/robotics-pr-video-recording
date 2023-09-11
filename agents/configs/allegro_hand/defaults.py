@@ -1,13 +1,16 @@
 import numpy as np
 from agents.controllers import PDJointPosController, PDEEPoseController
 
-def XArmAllegroDefaultConfig(arm_name='xarm6'):
+def XArmAllegroDefaultConfig(arm_name='xarm6',hand_name = 'allego'):
         use_target = True
         arm_dof = int(arm_name[-1])
-        hand_dof = 16
+        if hand_name == 'allegro':
+            hand_dof = 16
+        elif hand_name == 'ability':
+            hand_dof = 10
         # Arm
         arm_pd_joint_pos = dict(lower=None, upper=None, 
-                                normalize_action=False, 
+                                normalize_action=True, 
                                 use_delta=False,
                                 use_target=use_target,
                                 action_dim=arm_dof,

@@ -20,7 +20,7 @@
 <robot name="ability_hand">
 
 
-	<link name="base">
+	<link name="base_link">
 		<visual name="wrist_mesh">
 			<origin rpy = "0 0 0" xyz = "0 0 0"/>
 			<geometry>
@@ -34,7 +34,7 @@
 		</inertial>
 	</link>
 	<joint name="wrist2thumb" type="fixed">
-		<parent link="base"/>
+		<parent link="base_link"/>
 		<child link="thumb_base"/>
 		<origin xyz = "-24.0476665e-3 3.78124745e-3 32.32964923e-3" rpy = "3.14148426 -0.08848813 -3.14036612"/>
 	</joint>

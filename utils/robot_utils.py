@@ -71,8 +71,8 @@ def load_robot(scene: sapien.Scene, robot_name: str, disable_self_collision: boo
     robot = robot_builder.build(fix_root_link=True)
     robot.set_name(robot_name)
     # Set up drive(control) property
-    arm_control_params = np.array([2e5, 4e4, 5e2])  # This PD is far larger than real to improve stability
-    hand_control_params = np.array([2e2, 6e1, 1e1])
+    arm_control_params = np.array([2e5, 4e4, 5e4])  # This PD is far larger than real to improve stability # [2e5, 4e4, 5e2]
+    hand_control_params = np.array([3e2, 6e1, 1e5])
     arm_joint_names = [f"joint{i}" for i in range(1, 8)]    # NOTE(chichu):This setting is compataible with both xarm6 and xarm7.
     for joint in robot.get_active_joints():
         name = joint.get_name()

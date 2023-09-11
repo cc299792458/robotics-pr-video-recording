@@ -10,7 +10,7 @@ class TidyUpDish(BaseEnv):
         # add kitchen_envs
         builder = self._scene.create_actor_builder()
         builder.add_visual_from_file(filename='./assets/kitchen/kitchen1/kitchen_tietu.dae')
-        builder.add_multiple_collisions_from_file(scale=[1.0,1.0,0.965], filename='./assets/outputs/kitchen1.obj')
+        builder.add_multiple_collisions_from_file(scale=[1.0,1.0,0.955], filename='./assets/outputs/kitchen1.obj')
         kitchen_env = builder.build_kinematic(name='kitchen_env') # can not be affected by external forces
         kitchen_env.set_pose(sapien.Pose(p=[-6.7, -3.4225, -1.0+0.23],q=[0.707, 0, 0, -0.707]))
 
@@ -28,8 +28,8 @@ class TidyUpDish(BaseEnv):
         builder = self._scene.create_actor_builder()
         builder.add_visual_from_file(filename='./assets/kitchen/sink/stainless_steel_sink.dae')
         builder.add_multiple_collisions_from_file(filename='./assets/kitchen/sink/stainless_steel_sink.obj')
-        sink = builder.build(name='sink') # can not be affected by external forces
-        sink.set_pose(sapien.Pose(p=[-1.058, 0.0, -0.0096],q=[0.707, 0, 0, -0.707]))
+        sink = builder.build_static(name='sink') # can not be affected by external forces
+        sink.set_pose(sapien.Pose(p=[-1.062, -0.007, -0.138],q=[0.707, 0, 0, -0.707]))
 
         # add left_table 
         self._add_table(
@@ -46,7 +46,6 @@ class TidyUpDish(BaseEnv):
         -"kitchen_env",
         -"kitchen_table",
         -"dishes",
-        -""
         """
         # add kitchen_table
         builder = self._scene.create_actor_builder()
@@ -59,10 +58,17 @@ class TidyUpDish(BaseEnv):
         builder = self._scene.create_actor_builder()
         builder.add_visual_from_file(filename='./assets/kitchen/plates/plate.dae')
         builder.add_collision_from_file(filename='./assets/outputs/plate.obj')
-        for i in range(2):
+        for i in range(5):
             name = "dishes_" + str(i)
             dishes = builder.build(name = name) # can not be affected by external forces
-            dishes.set_pose(sapien.Pose(p=[-1.057, 0.03075, 0.006+0.1*i],q=[-0.291, 0, 0, 0.957]))
+            dishes.set_pose(sapien.Pose(p=[-1.137, 0.03075, 0.05+0.05*i],q=[-0.291, 0, 0, 0.957]))
+
+        # add pan
+        builder = self._scene.create_actor_builder()
+        builder.add_visual_from_file(scale=[1.2, 1.2, 1.2], filename='./assets/kitchen/pan/pan.dae')
+        builder.add_multiple_collisions_from_file(scale=[1.2, 1.2, 1.2], filename='./assets/kitchen/pan/pan.obj')
+        pan = builder.build(name = 'pan') # can not be affected by external forces
+        pan.set_pose(sapien.Pose(p=[-1.107, 0.03075, 0.002],q=[0.707,0.707,0,0]))
 
         # add photo
         builder = self._scene.create_actor_builder()
@@ -80,17 +86,17 @@ class TidyUpDish(BaseEnv):
 
         # add sponge
         builder = self._scene.create_actor_builder()
-        builder.add_visual_from_file(scale=[0.15,0.15,0.15],filename='./assets/kitchen/sponge/sponge.dae')
-        builder.add_collision_from_file(scale=[0.15,0.15,0.15],filename='./assets/kitchen/sponge/sponge.obj')
+        builder.add_visual_from_file(scale=[0.135,0.135,0.135],filename='./assets/kitchen/sponge/sponge.dae')
+        builder.add_collision_from_file(scale=[0.135,0.135,0.135],filename='./assets/kitchen/sponge/sponge.obj')
         sponge = builder.build(name = 'sponge') # can not be affected by external forces
-        sponge.set_pose(sapien.Pose(p=[-1.02, 0.509, 0.0],q=[0, -0.707, 0.707, 0]))
+        sponge.set_pose(sapien.Pose(p=[-1.049,0.722,-0.037],q=[-0.707,0,0,-0.707])) # allego: p=[-0.795, 0.632, -0.036],q=[-0.707, 0, 0, -0.707]))
 
         # add dish rack
         builder = self._scene.create_actor_builder()
         builder.add_visual_from_file(filename='./assets/kitchen/Dishrack/dishrack.dae')
         builder.add_multiple_collisions_from_file(filename='./assets/kitchen/Dishrack/dishrack.obj')
         dish_rack = builder.build(name = 'dish_rack') # can not be affected by external forces
-        dish_rack.set_pose(sapien.Pose(p=[-0.975, -0.601, 0.020],q=[0, 0, 0.707, 0.707]))
+        dish_rack.set_pose(sapien.Pose(p=[-0.975, -0.535, 0.020],q=[0, 0, 0.707, 0.707]))
     
     def get_actor_pose(self, actor_name):
         # TODO(haoyang): get actor's pose of actor_name. 
