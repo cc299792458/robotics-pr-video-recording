@@ -17,3 +17,4 @@ conda activate pr-vdrcd
 pip install -e .
 ```
 
+# Demo-kitchen-server-long-seq
